@@ -13,8 +13,8 @@ fnpatter = re.compile(file_name_pattern)
 pattern = "((wp\sajax\snopriv)|(wp_ajax_nopriv))+"
 repatter = re.compile(pattern)
 
-def download_file(url):
-    print("Downloading")
+def download_file(pnum,url):
+    print(str(pnum)+" : Downloading")
     filename = url.split('/')[-1]
     r = requests.get(url, stream=True)
     with open(filename, 'wb') as f:
@@ -48,15 +48,19 @@ def analyze_core(efname):
         fnresult = fnpatter.search(file)
         if(fnresult):
             # print(file)
-            with open(file,'r',newline='', encoding="utf8", errors='ignore') as f:
-                s=f.read()
-                # print(len(s))
-                # print(s)
-                sresult = repatter.search(s)
-                if(sresult):
-                    print("      #### Found! ####")
-                    with open("plugin_result.txt",'a',newline='')as resultfile:
-                        resultfile.write(file+"\n")
+            try:
+                with open(file,'r',newline='', encoding="utf8", errors='ignore') as f:
+                    s=f.read()
+                    # print(len(s))
+                    # print(s)
+                    sresult = repatter.search(s)
+                    if(sresult):
+                        print("      #### Found! ####")
+                        with open("plugin_result.txt",'a',newline='')as resultfile:
+                            resultfile.write(file+"\n")
+            except IsADirectoryError:
+                pass
+
     print("    analyze finished")
 
 
@@ -65,10 +69,10 @@ def analyze_plugin(start,end):
     with open('plugin_list.txt','r',newline='') as f:
         for i in range(start):
             f.readline()
-        for i in range(end-start):
+        for i in range(end-start+1):
             fname =f.readline().replace("\n","")+".zip"
             # print(fname)
-            file = download_file(url+fname)
+            file = download_file(start+i,url+fname)
             efname = zip_extract(file)
             os.remove(fname)#zipfileの削除
             if(efname):
