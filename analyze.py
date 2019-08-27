@@ -8,11 +8,14 @@ import re
 import shutil
 import sys
 
+#ファイル名に関する正規表現
 file_name_pattern = "\.+((py)|(txt)|(php))$"
 fnpatter = re.compile(file_name_pattern)
+#wp_ajax_noprivという文字列を見つけるための正規表現
 pattern = "((wp\sajax\snopriv)|(wp_ajax_nopriv))+"
 repatter = re.compile(pattern)
 
+#ワードプレスプラグインのzipファイルを取得する
 def download_file(pnum,url):
     print(str(pnum)+" : Downloading")
     filename = url.split('/')[-1]
@@ -25,6 +28,7 @@ def download_file(pnum,url):
         return filename
     return False
 
+#zipファイルを解凍する
 def zip_extract(filename):
     print("  Extracting")
     target_directory = '.'
@@ -36,34 +40,32 @@ def zip_extract(filename):
     zfile.extractall(target_directory)
     return fname.replace(".zip","")
 
+#プラグイン内の全てのファイルへのパスを取得
 def folder_search(path):
     files =glob.glob(path+"/**", recursive=True)
-    # print(files)
     return files
 
+#wp_ajax_noprivという文字列を実際に探すところ
 def analyze_core(efname):
     print("    analyzing "+efname)
     files= folder_search(efname)
     for file in files:
         fnresult = fnpatter.search(file)
         if(fnresult):
-            # print(file)
             try:
                 with open(file,'r',newline='', encoding="utf8", errors='ignore') as f:
                     s=f.read()
-                    # print(len(s))
-                    # print(s)
                     sresult = repatter.search(s)
                     if(sresult):
                         print("      #### Found! ####")
-                        with open("plugin_result.txt",'a',newline='')as resultfile:
+                        with open("plugin_result_"+sys.argv[1]+"-"+sys.argv[2]+".txt",'a',newline='')as resultfile:
                             resultfile.write(file+"\n")
             except IsADirectoryError:
                 pass
 
     print("    analyze finished")
 
-
+#プラグインリストを読み込んで分析する
 def analyze_plugin(start,end):
     url ="https://downloads.wordpress.org/plugin/"
     with open('plugin_list.txt','r',newline='') as f:
@@ -71,22 +73,16 @@ def analyze_plugin(start,end):
             f.readline()
         for i in range(end-start+1):
             fname =f.readline().replace("\n","")+".zip"
-            # print(fname)
             file = download_file(start+i,url+fname)
             efname = zip_extract(file)
-            os.remove(fname)#zipfileの削除
+            #zipfileの削除
+            os.remove(fname)
             if(efname):
                 analyze_core(efname)
+                #調査したプラグインの削除
                 shutil.rmtree(efname)
-
-
 
 
 if __name__ == '__main__':
     print("Start analyze.")
     analyze_plugin(int(sys.argv[1]),int(sys.argv[2]));
-    # analyze_core("test")
-    # print("Download")
-    # file = download_file("https://downloads.wordpress.org/plugin/2cpay.zip")
-    # fname = zip_extract(file)
-    # print(fname)
